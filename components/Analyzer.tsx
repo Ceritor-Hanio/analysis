@@ -243,17 +243,28 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
     const data = safeJsonParse<ApiResponse | undefined>(responseText, undefined);
     
     if (data) {
+      const getValue = (keys: string[], fallback: string | string[]): string | string[] => {
+        for (const key of keys) {
+          if (key in data && data[key as keyof ApiResponse] !== undefined) {
+            const value = data[key as keyof ApiResponse];
+            if (Array.isArray(value)) return value;
+            if (typeof value === 'string' && value) return value;
+          }
+        }
+        return fallback;
+      };
+
       return {
-        title: data.title || data.标题 || fileName,
-        productCategory: data.productCategory || data.产品类目 || selectedCategory || '其他',
-        hookPrinciple: data.hookPrinciple || data.hook || data.Hook || data.openingCopy || data.开头 || '未能解析',
-        successFactor: data.successFactor || data.成功因素 || data.success_factor || '未能完整解析',
-        contentStructure: data.contentStructure || data.内容结构 || data.content_structure || '未能完整解析',
-        visualElements: data.visualElements || data.视觉元素 || data.tags || data.标签 || [],
-        speechContent: data.speechContent || data.语音内容 || data.speech || '未能完整解析',
+        title: getValue(['title', '标题'], fileName) as string,
+        productCategory: getValue(['productCategory', '产品类目'], selectedCategory || '其他') as string,
+        hookPrinciple: getValue(['hookPrinciple', 'hook', 'Hook', 'openingCopy', '开头'], '未能解析') as string,
+        successFactor: getValue(['successFactor', '成功因素', 'success_factor'], '未能完整解析') as string,
+        contentStructure: getValue(['contentStructure', '内容结构', 'content_structure'], '未能完整解析') as string,
+        visualElements: getValue(['visualElements', '视觉元素', 'tags', '标签'], []) as string[],
+        speechContent: getValue(['speechContent', '语音内容', 'speech'], '未能完整解析') as string,
         aiReproduction: {
-          visualPrompt: data.aiReproduction?.visualPrompt || data.aiReproduction?.visual_prompt || data.视觉提示词 || '',
-          audioPrompt: data.aiReproduction?.audioPrompt || data.aiReproduction?.audio_prompt || data.音频提示词 || ''
+          visualPrompt: data.aiReproduction?.visualPrompt || data.aiReproduction?.visual_prompt || data['视觉提示词'] || '',
+          audioPrompt: data.aiReproduction?.audioPrompt || data.aiReproduction?.audio_prompt || data['音频提示词'] || ''
         },
         rawApiResponse: responseText
       };
@@ -442,10 +453,10 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
       const data = safeJsonParse<ApiResponse | undefined>(responseText, undefined);
       if (data) {
         setBatchInsight({
-          commonHookStrategies: data.commonHookStrategies || data.开头策略 || [],
-          visualPatterns: data.visualPatterns || data.视觉模式 || [],
-          contentThemes: data.contentThemes || data.内容主题 || [],
-          audienceAppealPoints: data.audienceAppealPoints || data.吸引力点 || []
+          commonHookStrategies: data.commonHookStrategies || data['开头策略'] || [],
+          visualPatterns: data.visualPatterns || data['视觉模式'] || [],
+          contentThemes: data.contentThemes || data['内容主题'] || [],
+          audienceAppealPoints: data.audienceAppealPoints || data['吸引力点'] || []
         });
       } else {
         setBatchInsight({
