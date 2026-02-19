@@ -45,6 +45,47 @@ interface TrendAnalysis {
   audienceAppealPoints: string[];
 }
 
+interface ApiResponse {
+  title?: string;
+  productCategory?: string;
+  hookPrinciple?: string;
+  hook?: string;
+  Hook?: string;
+  openingCopy?: string;
+  开头?: string;
+  successFactor?: string;
+  成功因素?: string;
+  success_factor?: string;
+  contentStructure?: string;
+  内容结构?: string;
+  content_structure?: string;
+  visualElements?: string[];
+  视觉元素?: string[];
+  tags?: string[];
+  标签?: string[];
+  speechContent?: string;
+  语音内容?: string;
+  speech?: string;
+  aiReproduction?: {
+    visualPrompt?: string;
+    audioPrompt?: string;
+    visual_prompt?: string;
+    audio_prompt?: string;
+    视觉提示词?: string;
+    音频提示词?: string;
+  };
+  标题?: string;
+  产品类目?: string;
+  开头策略?: string[];
+  视觉模式?: string[];
+  内容主题?: string[];
+  吸引力点?: string[];
+  commonHookStrategies?: string[];
+  visualPatterns?: string[];
+  contentThemes?: string[];
+  audienceAppealPoints?: string[];
+}
+
 interface AnalyzerProps {
   onSave: (newCase: ScriptCase) => void;
 }
@@ -199,7 +240,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
   };
 
   const parseAnalysisResult = (responseText: string, fileName: string): Omit<ScriptCase, 'id' | 'timestamp'> => {
-    const data = safeJsonParse<Record<string, unknown> | undefined>(responseText, undefined);
+    const data = safeJsonParse<ApiResponse | undefined>(responseText, undefined);
     
     if (data) {
       return {
@@ -398,7 +439,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
 
       const responseText = await callAliAPI(messages, apiKey, selectedModel);
       
-      const data = safeJsonParse<{ commonHookStrategies?: string[], visualPatterns?: string[], contentThemes?: string[], audienceAppealPoints?: string[] } | undefined>(responseText, undefined);
+      const data = safeJsonParse<ApiResponse | undefined>(responseText, undefined);
       if (data) {
         setBatchInsight({
           commonHookStrategies: data.commonHookStrategies || data.开头策略 || [],
