@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Loader2, ArrowRight, CheckCircle, Image as ImageIcon, Video, X, Plus, Trash2, Sparkles, Wand2, Copy, Workflow, Lightbulb, Clapperboard, RefreshCw, Send, Settings } from 'lucide-react';
 import { fileToBase64, callAliAPI } from '../app/aliApi';
 
-function safeJsonParse<T>(str: string, fallback: T): T {
+function safeJsonParse<T = null>(str: string, fallback?: T): T | null {
   try {
     const jsonMatch = str.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -13,7 +13,7 @@ function safeJsonParse<T>(str: string, fallback: T): T {
   } catch (e) {
     console.warn('JSON parse failed:', e);
   }
-  return fallback;
+  return fallback !== undefined ? fallback : null;
 }
 
 interface ScriptCase {
@@ -199,7 +199,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
   };
 
   const parseAnalysisResult = (responseText: string, fileName: string): Omit<ScriptCase, 'id' | 'timestamp'> => {
-    const data = safeJsonParse(responseText, null);
+    const data = safeJsonParse<Record<string, unknown>>(responseText, null);
     
     if (data) {
       return {
@@ -398,7 +398,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
 
       const responseText = await callAliAPI(messages, apiKey, selectedModel);
       
-      const data = safeJsonParse(responseText, null);
+      const data = safeJsonParse<{ commonHookStrategies?: string[], visualPatterns?: string[], contentThemes?: string[], audienceAppealPoints?: string[] }>(responseText, null);
       if (data) {
         setBatchInsight({
           commonHookStrategies: data.commonHookStrategies || data.开头策略 || [],
