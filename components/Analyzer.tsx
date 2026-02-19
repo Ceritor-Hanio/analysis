@@ -4,6 +4,33 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Loader2, ArrowRight, CheckCircle, Image as ImageIcon, Video, X, Plus, Trash2, Sparkles, Wand2, Copy, Workflow, Lightbulb, Clapperboard, RefreshCw, Send, Settings } from 'lucide-react';
 import { fileToBase64, callAliAPI } from '../app/aliApi';
 
+function findLastJsonObject(text: string): string | null {
+  const lastBraceIndex = text.lastIndexOf('}');
+  if (lastBraceIndex === -1) return null;
+  
+  for (let i = lastBraceIndex; i >= 0; i--) {
+    if (text[i] === '}') {
+      let braceCount = 0;
+      for (let j = i; j >= 0; j--) {
+        if (text[j] === '}') braceCount++;
+        if (text[j] === '{') {
+          braceCount--;
+          if (braceCount === 0) {
+            const jsonStr = text.substring(j, i + 1);
+            try {
+              JSON.parse(jsonStr);
+              return jsonStr;
+            } catch {
+              continue;
+            }
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function findJsonStart(text: string): { jsonStr: string | null; found: boolean } {
   const trimmed = text.trim();
   
@@ -78,6 +105,11 @@ function findJsonStart(text: string): { jsonStr: string | null; found: boolean }
   const jsonArrayMatch = trimmed.match(/\[[\s\S]*?\]/);
   if (jsonArrayMatch) {
     return { jsonStr: jsonArrayMatch[0], found: true };
+  }
+  
+  const lastJson = findLastJsonObject(text);
+  if (lastJson) {
+    return { jsonStr: lastJson, found: true };
   }
   
   return { jsonStr: null, found: false };
