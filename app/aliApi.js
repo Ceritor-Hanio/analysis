@@ -29,7 +29,24 @@ function findJsonStart(text) {
   const jsonPatterns = [
     /\{"[\s\S]*?"(title|productCategory|hookPrinciple|successFactor|contentStructure|visualElements|speechContent|aiReproduction)/i,
     /\{"[\s\S]*?"(标题|产品类目|开头策略|成功因素|内容结构|视觉元素|语音内容)/i,
-    /\{[\s\S]*?"/
+    /\{[\s\S]*?"/,
+    /\{"title"/i,
+    /\{"productCategory"/i,
+    /\{"hookPrinciple"/i,
+    /\{"successFactor"/i,
+    /\{"contentStructure"/i,
+    /\{"visualElements"/i,
+    /\{"speechContent"/i,
+    /\{"aiReproduction"/i,
+    /\{"标题"/i,
+    /\{"产品类目"/i,
+    /\{"开头策略"/i,
+    /\{"成功因素"/i,
+    /\{"内容结构"/i,
+    /\{"视觉元素"/i,
+    /\{"语音内容"/i,
+    /\{"视觉提示词"/i,
+    /\{"音频提示词"/i
   ];
   
   for (const pattern of jsonPatterns) {
