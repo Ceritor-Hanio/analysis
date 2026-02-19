@@ -21,9 +21,9 @@ function findJsonStart(text: string): { jsonStr: string | null; found: boolean }
   }
   
   const jsonPatterns: RegExp[] = [
-    /\{"(title|productCategory|hookPrinciple|successFactor|contentStructure|visualElements|speechContent|aiReproduction)/i,
-    /\{"(标题|产品类目|开头策略|成功因素|内容结构|视觉元素|语音内容)/i,
-    /\{\s*"/
+    /\{"[\s\S]*?"(title|productCategory|hookPrinciple|successFactor|contentStructure|visualElements|speechContent|aiReproduction)/i,
+    /\{"[\s\S]*?"(标题|产品类目|开头策略|成功因素|内容结构|视觉元素|语音内容)/i,
+    /\{[\s\S]*?"/
   ];
   
   for (const pattern of jsonPatterns) {
