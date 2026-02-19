@@ -1,118 +1,158 @@
 'use client';
 
-import { useState } from 'react';
-import { AnalysisResult } from './types';
+import { useState, useEffect } from 'react';
 import Analyzer from '@/components/Analyzer';
-import InsightPanel from '@/components/InsightPanel';
-import { Settings, BrainCircuit, BarChart3, Zap } from 'lucide-react';
+import { Library } from 'lucide-react';
+import { ScriptCase } from './types';
+
+const STORAGE_KEY = '素材拆解引擎_案例库';
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [cases, setCases] = useState<ScriptCase[]>([]);
+  const [activeTab, setActiveTab] = useState<'analyzer' | 'library'>('analyzer');
 
-  const handleApiKeySave = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('ali_api_key', key);
-    setShowSettings(false);
+  useEffect(() => {
+    const savedCases = localStorage.getItem(STORAGE_KEY);
+    if (savedCases) {
+      try {
+        setCases(JSON.parse(savedCases));
+      } catch (e) {
+        console.error('读取案例库失败:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+  }, [cases]);
+
+  const handleSaveToLibrary = (newCase: ScriptCase) => {
+    setCases(prev => [newCase, ...prev]);
   };
 
-  const handleAnalysisComplete = (result: AnalysisResult) => {
-    setAnalysisResult(result);
+  const handleDeleteCase = (id: string) => {
+    if (confirm('确定删除这个案例？')) {
+      setCases(prev => prev.filter(c => c.id !== id));
+    }
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-                <BrainCircuit className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <Library className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">素材拆解引擎</h1>
-                <p className="text-xs text-gray-500">Powered by 阿里云通义千问</p>
+                <h1 className="text-xl font-bold text-slate-900">素材拆解引擎</h1>
+                <p className="text-xs text-slate-500">Powered by 阿里云通义千问</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Settings className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-
-          {showSettings && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                阿里云 API Key
-              </label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="请输入您的阿里云 API Key"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <p className="mt-2 text-xs text-gray-500">
-                API Key 仅保存在本地浏览器中，用于调用阿里云通义千问 API。
-              </p>
+            
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => handleApiKeySave(apiKey)}
-                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => setActiveTab('analyzer')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'analyzer'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
               >
-                保存
+                <Library className="w-4 h-4 inline-block mr-2" />
+                分析器
+              </button>
+              <button
+                onClick={() => setActiveTab('library')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'library'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Library className="w-4 h-4 inline-block mr-2" />
+                案例库 ({cases.length})
               </button>
             </div>
-          )}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <Zap className="w-5 h-5 text-yellow-500" />
-                <h2 className="text-lg font-semibold text-gray-900">上传素材</h2>
-              </div>
-              <Analyzer apiKey={apiKey} onAnalysisComplete={handleAnalysisComplete} />
+      <main className="max-w-7xl mx-auto py-8 px-4">
+        {activeTab === 'analyzer' ? (
+          <Analyzer onSave={handleSaveToLibrary} />
+        ) : (
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">我的案例库</h2>
+              <p className="text-slate-600">已保存 {cases.length} 个分析案例</p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-              <h3 className="font-medium text-gray-900 mb-3">使用说明</h3>
-              <ol className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-start space-x-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>
-                  <span>配置阿里云 API Key</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
-                  <span>上传图片或视频素材</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
-                  <span>点击「开始分析」</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">4</span>
-                  <span>查看分析结果和洞察</span>
-                </li>
-              </ol>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <div className="flex items-center space-x-2 mb-6">
-                <BarChart3 className="w-5 h-5 text-green-500" />
-                <h2 className="text-lg font-semibold text-gray-900">分析洞察</h2>
+            {cases.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <Library className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">案例库为空，请先进行分析</p>
+                <button
+                  onClick={() => setActiveTab('analyzer')}
+                  className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  去分析
+                </button>
               </div>
-              <InsightPanel result={analysisResult} />
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {cases.map((caseItem) => (
+                  <div key={caseItem.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    {caseItem.originalMedia?.data && (
+                      <div className="aspect-video bg-slate-100">
+                        {caseItem.originalMedia.type === 'video' ? (
+                          <video 
+                            src={`data:${caseItem.originalMedia.mimeType};base64,${caseItem.originalMedia.data}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img 
+                            src={`data:${caseItem.originalMedia.mimeType};base64,${caseItem.originalMedia.data}`} 
+                            alt={caseItem.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-slate-900 truncate flex-1">{caseItem.title}</h3>
+                        <button
+                          onClick={() => handleDeleteCase(caseItem.id)}
+                          className="p-1 text-slate-400 hover:text-red-500"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-2">{caseItem.productCategory}</p>
+                      <p className="text-xs text-slate-500 mb-2">{caseItem.hookPrinciple}</p>
+                      <p className="text-xs text-slate-400">{formatDate(caseItem.timestamp)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
