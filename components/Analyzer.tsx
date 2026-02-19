@@ -149,6 +149,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
   const [isBatchAnalyzing, setIsBatchAnalyzing] = useState(false);
   const [batchInsight, setBatchInsight] = useState<TrendAnalysis | null>(null);
   const [showRawResponseIndex, setShowRawResponseIndex] = useState<number | null>(null);
+  const [rawJsonResponse, setRawJsonResponse] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('qwen3.5-plus');
@@ -730,6 +731,19 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
                     <Copy className="w-4 h-4 mr-1" />
                     全部存入库
                   </button>
+                  <button
+                    onClick={() => {
+                      if (results.length === 1) {
+                        setRawJsonResponse(results[0].rawApiResponse || '');
+                        setShowRawResponseIndex(0);
+                      }
+                    }}
+                    disabled={results.length !== 1}
+                    className="flex items-center px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FileText className="w-4 h-4 mr-1" />
+                    原始JSON
+                  </button>
                 </div>
               </div>
 
@@ -954,6 +968,30 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
           )}
         </div>
       </div>
+
+      {showRawResponseIndex !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-slate-900">原始JSON响应</h3>
+              <button
+                onClick={() => {
+                  setShowRawResponseIndex(null);
+                  setRawJsonResponse('');
+                }}
+                className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-auto">
+              <pre className="text-xs text-slate-700 bg-slate-50 p-4 rounded-lg overflow-auto max-h-[60vh]">
+                {rawJsonResponse}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
