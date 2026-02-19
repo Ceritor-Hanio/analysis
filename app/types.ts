@@ -19,3 +19,22 @@ export interface ScriptCase {
   };
   rawApiResponse?: string;
 }
+
+export interface TrendAnalysis {
+  commonHookStrategies: string[];
+  visualPatterns: string[];
+  contentThemes: string[];
+  audienceAppealPoints: string[];
+}
+
+export interface AnalysisResult {
+  id: string;
+  timestamp: number;
+  title: string;
+  productCategory: string;
+  hookPrinciple: string;
+  openingCopy?: string;
+  successFactor: string;
+  contentStructure: string;
+  visualReference?: string;
+}
