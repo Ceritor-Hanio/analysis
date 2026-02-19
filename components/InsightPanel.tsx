@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { ScriptCase, TrendAnalysis, AnalysisResult } from '../app/types';
+import { ScriptCase, TrendAnalysis } from '../app/types';
 import { BarChart3, FileText, Sparkles, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface InsightPanelProps {
-  result: AnalysisResult | null;
+  result: { scriptCases: ScriptCase[]; trendAnalysis: TrendAnalysis } | null;
 }
 
 const formatTextWithNewlines = (text: string) => {

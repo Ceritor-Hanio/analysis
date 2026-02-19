@@ -1009,3 +1009,5 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
     </div>
   );
 }
+
+export type { ScriptCase, TrendAnalysis, ApiResponse, AnalyzerProps };
