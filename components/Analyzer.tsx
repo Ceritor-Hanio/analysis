@@ -4,40 +4,64 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Loader2, ArrowRight, CheckCircle, Image as ImageIcon, Video, X, Plus, Trash2, Sparkles, Wand2, Copy, Workflow, Lightbulb, Clapperboard, RefreshCw, Send, Settings } from 'lucide-react';
 import { fileToBase64, callAliAPI } from '../app/aliApi';
 
-function safeJsonParse<T>(str: string, fallback: T): T {
-  try {
-    const trimmed = str.trim();
-    const firstBrace = trimmed.indexOf('{');
-    if (firstBrace === -1) {
-      return fallback;
+function extractJsonFromResponse(text: string): string | null {
+  if (!text || typeof text !== 'string') return null;
+  
+  const trimmed = text.trim();
+  
+  const codeBlockMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+  
+  const codeBlockAnyMatch = trimmed.match(/```\s*([\s\S]*?)\s*```/);
+  if (codeBlockAnyMatch) {
+    const content = codeBlockAnyMatch[1].trim();
+    if (content.startsWith('{') || content.startsWith('[')) {
+      return content;
     }
-    
+  }
+  
+  const jsonStartMatch = trimmed.match(/\{["']/);
+  if (jsonStartMatch) {
+    const startIndex = text.indexOf(jsonStartMatch[0]);
     let braceCount = 0;
-    let lastBrace = -1;
-    for (let i = firstBrace; i < trimmed.length; i++) {
-      if (trimmed[i] === '{') braceCount++;
-      if (trimmed[i] === '}') {
+    for (let i = startIndex; i < text.length; i++) {
+      if (text[i] === '{') braceCount++;
+      if (text[i] === '}') {
         braceCount--;
         if (braceCount === 0) {
-          lastBrace = i;
-          break;
+          return text.substring(startIndex, i + 1);
         }
       }
     }
-    
-    if (lastBrace > firstBrace) {
-      const jsonStr = trimmed.substring(firstBrace, lastBrace + 1);
+  }
+  
+  const jsonArrayMatch = trimmed.match(/\[[\s\S]*?\]/);
+  if (jsonArrayMatch) {
+    return jsonArrayMatch[0];
+  }
+  
+  return null;
+}
+
+function safeJsonParse<T>(str: string, fallback: T): T {
+  const jsonStr = extractJsonFromResponse(str);
+  
+  if (jsonStr) {
+    try {
       return JSON.parse(jsonStr);
+    } catch (e) {
+      console.warn('JSON parse failed after extraction:', e);
     }
-    
-    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
+  }
+  
+  try {
+    return JSON.parse(str);
   } catch (e) {
     console.warn('JSON parse failed:', e);
-    console.warn('Original string:', str.substring(0, 500));
   }
+  
   return fallback;
 }
 

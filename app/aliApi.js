@@ -10,7 +10,58 @@ export const fileToBase64 = (file) => {
   });
 };
 
+function extractJsonFromResponse(text) {
+  if (!text || typeof text !== 'string') return null;
+  
+  const trimmed = text.trim();
+  
+  const codeBlockMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+  
+  const codeBlockAnyMatch = trimmed.match(/```\s*([\s\S]*?)\s*```/);
+  if (codeBlockAnyMatch) {
+    const content = codeBlockAnyMatch[1].trim();
+    if (content.startsWith('{') || content.startsWith('[')) {
+      return content;
+    }
+  }
+  
+  const jsonStartMatch = trimmed.match(/\{["']/);
+  if (jsonStartMatch) {
+    const startIndex = text.indexOf(jsonStartMatch[0]);
+    let braceCount = 0;
+    for (let i = startIndex; i < text.length; i++) {
+      if (text[i] === '{') braceCount++;
+      if (text[i] === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          return text.substring(startIndex, i + 1);
+        }
+      }
+    }
+  }
+  
+  const jsonArrayMatch = trimmed.match(/\[[\s\S]*?\]/);
+  if (jsonArrayMatch) {
+    return jsonArrayMatch[0];
+  }
+  
+  return null;
+}
+
 function safeJsonParse(str) {
+  const jsonStr = extractJsonFromResponse(str);
+  
+  if (jsonStr) {
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      return null;
+    }
+  }
+  
   try {
     return JSON.parse(str);
   } catch (e) {
