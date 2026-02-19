@@ -10,21 +10,42 @@ export const fileToBase64 = (file) => {
   });
 };
 
-function extractJsonFromResponse(text) {
-  if (!text || typeof text !== 'string') return null;
-  
+function findJsonStart(text) {
   const trimmed = text.trim();
   
   const codeBlockMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/);
   if (codeBlockMatch) {
-    return codeBlockMatch[1].trim();
+    return { jsonStr: codeBlockMatch[1].trim(), found: true };
   }
   
   const codeBlockAnyMatch = trimmed.match(/```\s*([\s\S]*?)\s*```/);
   if (codeBlockAnyMatch) {
     const content = codeBlockAnyMatch[1].trim();
     if (content.startsWith('{') || content.startsWith('[')) {
-      return content;
+      return { jsonStr: content, found: true };
+    }
+  }
+  
+  const jsonPatterns = [
+    /\{"(title|productCategory|hookPrinciple|successFactor|contentStructure|visualElements|speechContent|aiReproduction)/i,
+    /\{"(标题|产品类目|开头策略|成功因素|内容结构|视觉元素|语音内容)/i,
+    /\{\s*"/
+  ];
+  
+  for (const pattern of jsonPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const startIndex = text.indexOf(match[0]);
+      let braceCount = 0;
+      for (let i = startIndex; i < text.length; i++) {
+        if (text[i] === '{') braceCount++;
+        if (text[i] === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            return { jsonStr: text.substring(startIndex, i + 1), found: true };
+          }
+        }
+      }
     }
   }
   
@@ -37,7 +58,7 @@ function extractJsonFromResponse(text) {
       if (text[i] === '}') {
         braceCount--;
         if (braceCount === 0) {
-          return text.substring(startIndex, i + 1);
+          return { jsonStr: text.substring(startIndex, i + 1), found: true };
         }
       }
     }
@@ -45,10 +66,17 @@ function extractJsonFromResponse(text) {
   
   const jsonArrayMatch = trimmed.match(/\[[\s\S]*?\]/);
   if (jsonArrayMatch) {
-    return jsonArrayMatch[0];
+    return { jsonStr: jsonArrayMatch[0], found: true };
   }
   
-  return null;
+  return { jsonStr: null, found: false };
+}
+
+function extractJsonFromResponse(text) {
+  if (!text || typeof text !== 'string') return null;
+  
+  const { jsonStr, found } = findJsonStart(text);
+  return jsonStr;
 }
 
 function safeJsonParse(str) {
