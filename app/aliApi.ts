@@ -22,7 +22,7 @@ export async function callAliAPI(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 60000);
+  }, 120000);
 
   try {
     const res = await fetch('/api/ali', {
@@ -39,15 +39,22 @@ export async function callAliAPI(
       throw new Error(`API Error (${res.status}): ${errorText}`);
     }
 
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    return content;
+    const blob = await res.blob();
+    const text = await blob.text();
+
+    try {
+      const data = JSON.parse(text);
+      const content = data.choices?.[0]?.message?.content || '';
+      return content;
+    } catch {
+      throw new Error(`Invalid JSON response: ${text.substring(0, 200)}`);
+    }
 
   } catch (err) {
     clearTimeout(timeoutId);
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('aborted')) {
-      throw new Error('请求超时');
+    if (msg.includes('aborted') || msg.includes('canceled')) {
+      throw new Error('请求超时或被中断');
     }
     throw err;
   }

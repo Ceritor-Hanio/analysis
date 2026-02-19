@@ -1,12 +1,15 @@
 const ALI_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
 export async function onRequest({ request }) {
+  console.log('EdgeOne function started');
+
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 
   try {
     const { apiKey, modelId, messages } = await request.json();
+    console.log('Request received, messages count:', messages?.length);
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'API Key required' }), {
@@ -15,6 +18,7 @@ export async function onRequest({ request }) {
       });
     }
 
+    console.log('Calling DashScope API...');
     const res = await fetch(ALI_API_BASE + '/chat/completions', {
       method: 'POST',
       headers: {
@@ -27,9 +31,12 @@ export async function onRequest({ request }) {
       }),
     });
 
+    console.log('DashScope response status:', res.status);
     const text = await res.text();
+    console.log('DashScope response length:', text.length);
 
     if (!res.ok) {
+      console.error('DashScope error:', text.substring(0, 500));
       return new Response(text, {
         status: res.status,
         headers: { 'Content-Type': 'application/json' }
@@ -42,6 +49,7 @@ export async function onRequest({ request }) {
     });
 
   } catch (e) {
+    console.error('Function error:', e.message);
     return new Response(JSON.stringify({ error: e.message || 'Error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
