@@ -4,6 +4,18 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Loader2, ArrowRight, CheckCircle, Image as ImageIcon, Video, X, Plus, Trash2, Sparkles, Wand2, Copy, Workflow, Lightbulb, Clapperboard, RefreshCw, Send, Settings } from 'lucide-react';
 import { fileToBase64, callAliAPI } from '../app/aliApi';
 
+function safeJsonParse<T>(str: string, fallback: T): T {
+  try {
+    const jsonMatch = str.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (e) {
+    console.warn('JSON parse failed:', e);
+  }
+  return fallback;
+}
+
 interface ScriptCase {
   id: string;
   timestamp: number;
@@ -187,27 +199,23 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
   };
 
   const parseAnalysisResult = (responseText: string, fileName: string): Omit<ScriptCase, 'id' | 'timestamp'> => {
-    try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const data = JSON.parse(jsonMatch[0]);
-        return {
-          title: data.title || data.标题 || fileName,
-          productCategory: data.productCategory || data.产品类目 || selectedCategory || '其他',
-          hookPrinciple: data.hookPrinciple || data.hook || data.Hook || data.openingCopy || data.开头 || '未能解析',
-          successFactor: data.successFactor || data.成功因素 || data.success_factor || '未能完整解析',
-          contentStructure: data.contentStructure || data.内容结构 || data.content_structure || '未能完整解析',
-          visualElements: data.visualElements || data.视觉元素 || data.tags || data.标签 || [],
-          speechContent: data.speechContent || data.语音内容 || data.speech || '未能完整解析',
-          aiReproduction: {
-            visualPrompt: data.aiReproduction?.visualPrompt || data.aiReproduction?.visual_prompt || data.视觉提示词 || '',
-            audioPrompt: data.aiReproduction?.audioPrompt || data.aiReproduction?.audio_prompt || data.音频提示词 || ''
-          },
-          rawApiResponse: responseText
-        };
-      }
-    } catch (parseError) {
-      console.error('JSON解析失败:', parseError);
+    const data = safeJsonParse(responseText, null);
+    
+    if (data) {
+      return {
+        title: data.title || data.标题 || fileName,
+        productCategory: data.productCategory || data.产品类目 || selectedCategory || '其他',
+        hookPrinciple: data.hookPrinciple || data.hook || data.Hook || data.openingCopy || data.开头 || '未能解析',
+        successFactor: data.successFactor || data.成功因素 || data.success_factor || '未能完整解析',
+        contentStructure: data.contentStructure || data.内容结构 || data.content_structure || '未能完整解析',
+        visualElements: data.visualElements || data.视觉元素 || data.tags || data.标签 || [],
+        speechContent: data.speechContent || data.语音内容 || data.speech || '未能完整解析',
+        aiReproduction: {
+          visualPrompt: data.aiReproduction?.visualPrompt || data.aiReproduction?.visual_prompt || data.视觉提示词 || '',
+          audioPrompt: data.aiReproduction?.audioPrompt || data.aiReproduction?.audio_prompt || data.音频提示词 || ''
+        },
+        rawApiResponse: responseText
+      };
     }
     
     return {
@@ -390,21 +398,15 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
 
       const responseText = await callAliAPI(messages, apiKey, selectedModel);
       
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const data = JSON.parse(jsonMatch[0]);
-          setBatchInsight({
-            commonHookStrategies: data.commonHookStrategies || data.开头策略 || [],
-            visualPatterns: data.visualPatterns || data.视觉模式 || [],
-            contentThemes: data.contentThemes || data.内容主题 || [],
-            audienceAppealPoints: data.audienceAppealPoints || data.吸引力点 || []
-          });
-        } else {
-          throw new Error('未找到JSON格式');
-        }
-      } catch (parseError) {
-        console.error('趋势分析JSON解析失败:', parseError);
+      const data = safeJsonParse(responseText, null);
+      if (data) {
+        setBatchInsight({
+          commonHookStrategies: data.commonHookStrategies || data.开头策略 || [],
+          visualPatterns: data.visualPatterns || data.视觉模式 || [],
+          contentThemes: data.contentThemes || data.内容主题 || [],
+          audienceAppealPoints: data.audienceAppealPoints || data.吸引力点 || []
+        });
+      } else {
         setBatchInsight({
           commonHookStrategies: [],
           visualPatterns: [],

@@ -10,6 +10,14 @@ export const fileToBase64 = (file) => {
   });
 };
 
+function safeJsonParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onChunk) {
   if (!apiKey) {
     throw new Error('请先配置阿里云 API Key！');
@@ -33,9 +41,12 @@ export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onC
     if (!res.ok) {
       let errorMessage = `HTTP error! status: ${res.status}`;
       try {
-        const errorData = await res.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
+        const errorText = await res.text();
+        const errorData = safeJsonParse(errorText);
+        if (errorData?.error) {
+          errorMessage = typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error);
+        } else if (errorText) {
+          errorMessage = errorText.substring(0, 500);
         }
       } catch (e) {}
       throw new Error(errorMessage);
@@ -55,8 +66,10 @@ export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onC
       buffer = lines.pop() || '';
 
       for (const line of lines) {
+        if (!line.trim() || line === 'undefined') continue;
+        
         if (line.startsWith('data: ')) {
-          const data = line.slice(6);
+          const data = line.slice(6).trim();
           if (data === '[DONE]') {
             if (onChunk) {
               onChunk(fullContent, '', true);
@@ -64,8 +77,8 @@ export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onC
             return fullContent;
           }
 
-          try {
-            const json = JSON.parse(data);
+          const json = safeJsonParse(data);
+          if (json) {
             const chunk = json.choices?.[0]?.delta?.reasoning_content || 
                           json.choices?.[0]?.delta?.content || '';
             if (chunk) {
@@ -74,7 +87,7 @@ export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onC
                 onChunk(fullContent, '', false);
               }
             }
-          } catch (e) {}
+          }
         }
       }
     }
