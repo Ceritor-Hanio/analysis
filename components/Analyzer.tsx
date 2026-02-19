@@ -184,7 +184,6 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
   const [showRawResponseIndex, setShowRawResponseIndex] = useState<number | null>(null);
   const [rawJsonResponse, setRawJsonResponse] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
-  const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('qwen3.5-plus');
   const [showSettings, setShowSettings] = useState(false);
 
@@ -321,12 +320,6 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
   };
 
   const handleAnalyze = async () => {
-    if (!apiKey) {
-      alert('请先填写 API Key！');
-      setShowSettings(true);
-      return;
-    }
-
     if (!textInput && selectedFiles.length === 0) return;
 
     setIsAnalyzing(true);
@@ -374,7 +367,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
               ]}
             ];
 
-            const responseText = await callAliAPI(messages, apiKey, selectedModel);
+            const responseText = await callAliAPI(messages, '', selectedModel);
             const analysis = parseAnalysisResult(responseText, file.name);
             
             const analysisWithMedia: Omit<ScriptCase, 'id' | 'timestamp'> = {
@@ -400,7 +393,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `分析以下素材：${textInput}` }
           ];
-          const responseText = await callAliAPI(messages, apiKey, selectedModel);
+          const responseText = await callAliAPI(messages, '', selectedModel);
           const analysis = parseAnalysisResult(responseText, '文本分析');
           newResults.push(analysis);
         } catch (err: any) {
@@ -450,7 +443,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
             { role: 'user', content: taskDescription }
           ];
           
-          const newPrompt = await callAliAPI(messages, apiKey, selectedModel);
+          const newPrompt = await callAliAPI(messages, '', selectedModel);
           
           setRefinedPrompts(prev => ({
               ...prev,
@@ -482,7 +475,7 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
         { role: 'user', content: `分析以下 ${results.length} 个案例：\n${casesText}` }
       ];
 
-      const responseText = await callAliAPI(messages, apiKey, selectedModel);
+      const responseText = await callAliAPI(messages, '', selectedModel);
       
       const data = safeJsonParse<ApiResponse | undefined>(responseText, undefined);
       if (data) {
@@ -678,18 +671,6 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
               
               {showSettings && (
                 <div className="mt-3 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      API Key <span className="text-red-500 font-normal">* 必填</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="sk-..."
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">
                       模型名称

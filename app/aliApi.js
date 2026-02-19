@@ -19,20 +19,16 @@ function safeJsonParse(str) {
 }
 
 export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onChunk) {
-  if (!apiKey) {
-    throw new Error('请先配置阿里云 API Key！');
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 120000);
+  }, 180000);
 
   try {
     const res = await fetch('/api/ali', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey, modelId, messages }),
+      body: JSON.stringify({ model: modelId, messages }),
       signal: controller.signal,
     });
 
@@ -50,6 +46,10 @@ export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onC
         }
       } catch (e) {}
       throw new Error(errorMessage);
+    }
+
+    if (!res.body) {
+      throw new Error('Response body is null');
     }
 
     const reader = res.body.getReader();
@@ -77,16 +77,17 @@ export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onC
             return fullContent;
           }
 
-          const json = safeJsonParse(data);
-          if (json) {
-            const chunk = json.choices?.[0]?.delta?.reasoning_content || 
-                          json.choices?.[0]?.delta?.content || '';
+          try {
+            const json = JSON.parse(data);
+            const chunk = json.choices?.[0]?.delta?.content || 
+                          json.choices?.[0]?.delta?.reasoning_content || '';
             if (chunk) {
               fullContent += chunk;
               if (onChunk) {
                 onChunk(fullContent, '', false);
               }
             }
+          } catch (e) {
           }
         }
       }

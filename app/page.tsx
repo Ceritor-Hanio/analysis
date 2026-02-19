@@ -3,28 +3,7 @@
 import { useState, useEffect } from 'react';
 import Analyzer from '@/components/Analyzer';
 import { Library } from 'lucide-react';
-
-interface ScriptCase {
-  id: string;
-  timestamp: number;
-  title: string;
-  productCategory: string;
-  hookPrinciple: string;
-  successFactor: string;
-  contentStructure: string;
-  visualElements: string[];
-  speechContent: string;
-  aiReproduction: {
-    visualPrompt: string;
-    audioPrompt: string;
-  };
-  originalMedia?: {
-    type: string;
-    data: string;
-    mimeType: string;
-  };
-  rawApiResponse?: string;
-}
+import { ScriptCase } from './types';
 
 const STORAGE_KEY = '素材拆解引擎_案例库';
 
