@@ -3,7 +3,35 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Loader2, ArrowRight, CheckCircle, Image as ImageIcon, Video, X, Plus, Trash2, Sparkles, Wand2, Copy, Workflow, Lightbulb, Clapperboard, RefreshCw, Send, Settings } from 'lucide-react';
 import { fileToBase64, callAliAPI } from '../app/aliApi';
-import { ScriptCase, TrendAnalysis } from '../app/types';
+
+interface ScriptCase {
+  id: string;
+  timestamp: number;
+  title: string;
+  productCategory: string;
+  hookPrinciple: string;
+  successFactor: string;
+  contentStructure: string;
+  visualElements: string[];
+  speechContent: string;
+  aiReproduction: {
+    visualPrompt: string;
+    audioPrompt: string;
+  };
+  originalMedia?: {
+    type: string;
+    data: string;
+    mimeType: string;
+  };
+  rawApiResponse?: string;
+}
+
+interface TrendAnalysis {
+  commonHookStrategies: string[];
+  visualPatterns: string[];
+  contentThemes: string[];
+  audienceAppealPoints: string[];
+}
 
 interface AnalyzerProps {
   onSave: (newCase: ScriptCase) => void;

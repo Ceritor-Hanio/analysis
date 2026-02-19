@@ -1,15 +1,3 @@
-const ALI_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-
-function streamProxy(res) {
-  return new Response(res.body, {
-    status: res.status,
-    headers: {
-      'Content-Type': res.headers.get('Content-Type') || 'text/event-stream',
-      'Cache-Control': 'no-store',
-    },
-  });
-}
-
 export async function onRequest({ request }) {
   request.headers.delete('accept-encoding');
 
@@ -27,6 +15,8 @@ export async function onRequest({ request }) {
       });
     }
 
+    const ALI_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+    
     const res = await fetch(ALI_API_BASE + '/chat/completions', {
       method: 'POST',
       headers: {
@@ -40,7 +30,21 @@ export async function onRequest({ request }) {
       }),
     });
 
-    return streamProxy(res);
+    if (!res.ok) {
+      const errorText = await res.text();
+      return new Response(JSON.stringify({ error: errorText }), {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(res.body, {
+      status: res.status,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-store',
+      },
+    });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message || 'Error' }), {

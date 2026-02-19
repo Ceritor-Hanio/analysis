@@ -1,20 +1,16 @@
-export const fileToBase64 = (file: File): Promise<string> => {
+export const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      const result = reader.result as string;
+      const result = reader.result;
       resolve(result.split(',')[1]);
     };
     reader.onerror = error => reject(error);
   });
 };
 
-export async function callAliAPI(
-  messages: Array<{ role: string; content: any }>,
-  apiKey: string,
-  modelId: string = 'qwen3.5-plus'
-): Promise<string> {
+export async function callAliAPI(messages, apiKey, modelId = 'qwen3.5-plus', onChunk) {
   if (!apiKey) {
     throw new Error('请先配置阿里云 API Key！');
   }
@@ -35,15 +31,17 @@ export async function callAliAPI(
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`API Error (${res.status}): ${errorText}`);
+      let errorMessage = `HTTP error! status: ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (e) {}
+      throw new Error(errorMessage);
     }
 
-    const reader = res.body?.getReader();
-    if (!reader) {
-      throw new Error('No response body');
-    }
-
+    const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let fullContent = '';
@@ -60,6 +58,9 @@ export async function callAliAPI(
         if (line.startsWith('data: ')) {
           const data = line.slice(6);
           if (data === '[DONE]') {
+            if (onChunk) {
+              onChunk(fullContent, '', true);
+            }
             return fullContent;
           }
 
@@ -67,14 +68,20 @@ export async function callAliAPI(
             const json = JSON.parse(data);
             const chunk = json.choices?.[0]?.delta?.reasoning_content || 
                           json.choices?.[0]?.delta?.content || '';
-            fullContent += chunk;
-          } catch (e) {
-            // 忽略解析错误
-          }
+            if (chunk) {
+              fullContent += chunk;
+              if (onChunk) {
+                onChunk(fullContent, '', false);
+              }
+            }
+          } catch (e) {}
         }
       }
     }
 
+    if (onChunk) {
+      onChunk(fullContent, '', true);
+    }
     return fullContent;
 
   } catch (err) {

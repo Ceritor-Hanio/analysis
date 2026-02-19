@@ -1,8 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import { ScriptCase, TrendAnalysis, AnalysisResult } from '../app/types';
 import { BarChart3, FileText, Sparkles, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
+
+interface ScriptCase {
+  id: string;
+  timestamp: number;
+  title: string;
+  productCategory: string;
+  hookPrinciple: string;
+  successFactor: string;
+  contentStructure: string;
+  visualElements: string[];
+  speechContent: string;
+  aiReproduction: {
+    visualPrompt: string;
+    audioPrompt: string;
+  };
+  originalMedia?: {
+    type: string;
+    data: string;
+    mimeType: string;
+  };
+  rawApiResponse?: string;
+}
+
+interface TrendAnalysis {
+  commonHookStrategies: string[];
+  visualPatterns: string[];
+  contentThemes: string[];
+  audienceAppealPoints: string[];
+}
+
+interface AnalysisResult {
+  scriptCases: ScriptCase[];
+  trendAnalysis: TrendAnalysis;
+  timestamp: number;
+}
 
 interface InsightPanelProps {
   result: AnalysisResult | null;
