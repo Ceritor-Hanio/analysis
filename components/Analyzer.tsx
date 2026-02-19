@@ -263,8 +263,8 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
         visualElements: getValue(['visualElements', '视觉元素', 'tags', '标签'], []) as string[],
         speechContent: getValue(['speechContent', '语音内容', 'speech'], '未能完整解析') as string,
         aiReproduction: {
-          visualPrompt: data.aiReproduction?.visualPrompt || data.aiReproduction?.visual_prompt || data['视觉提示词'] || '',
-          audioPrompt: data.aiReproduction?.audioPrompt || data.aiReproduction?.audio_prompt || data['音频提示词'] || ''
+          visualPrompt: data.aiReproduction?.visualPrompt || data.aiReproduction?.visual_prompt || (data as any)['视觉提示词'] || '',
+          audioPrompt: data.aiReproduction?.audioPrompt || data.aiReproduction?.audio_prompt || (data as any)['音频提示词'] || ''
         },
         rawApiResponse: responseText
       };
@@ -453,10 +453,10 @@ export default function Analyzer({ onSave }: AnalyzerProps) {
       const data = safeJsonParse<ApiResponse | undefined>(responseText, undefined);
       if (data) {
         setBatchInsight({
-          commonHookStrategies: data.commonHookStrategies || data['开头策略'] || [],
-          visualPatterns: data.visualPatterns || data['视觉模式'] || [],
-          contentThemes: data.contentThemes || data['内容主题'] || [],
-          audienceAppealPoints: data.audienceAppealPoints || data['吸引力点'] || []
+          commonHookStrategies: data.commonHookStrategies || (data as any)['开头策略'] || [],
+          visualPatterns: data.visualPatterns || (data as any)['视觉模式'] || [],
+          contentThemes: data.contentThemes || (data as any)['内容主题'] || [],
+          audienceAppealPoints: data.audienceAppealPoints || (data as any)['吸引力点'] || []
         });
       } else {
         setBatchInsight({
