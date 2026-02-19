@@ -130,7 +130,7 @@ const generateSystemPrompt = (category?: string) => {
 重要要求：
 1. 直接输出JSON，不要有任何前缀文字（如"以下是分析结果"、"Thinking Process"等）
 2. 不要输出任何推理过程、思考步骤或分析说明
-3. 不要使用markdown代码块（如```json ```）
+3. 不要使用markdown代码块包裹JSON
 4. JSON必须是最外层为{}的完整对象
 5. 不要有多余的换行或空白字符
 
