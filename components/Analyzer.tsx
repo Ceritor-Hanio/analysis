@@ -6,12 +6,37 @@ import { fileToBase64, callAliAPI } from '../app/aliApi';
 
 function safeJsonParse<T>(str: string, fallback: T): T {
   try {
-    const jsonMatch = str.match(/\{[\s\S]*\}/);
+    const trimmed = str.trim();
+    const firstBrace = trimmed.indexOf('{');
+    if (firstBrace === -1) {
+      return fallback;
+    }
+    
+    let braceCount = 0;
+    let lastBrace = -1;
+    for (let i = firstBrace; i < trimmed.length; i++) {
+      if (trimmed[i] === '{') braceCount++;
+      if (trimmed[i] === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          lastBrace = i;
+          break;
+        }
+      }
+    }
+    
+    if (lastBrace > firstBrace) {
+      const jsonStr = trimmed.substring(firstBrace, lastBrace + 1);
+      return JSON.parse(jsonStr);
+    }
+    
+    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
   } catch (e) {
     console.warn('JSON parse failed:', e);
+    console.warn('Original string:', str.substring(0, 500));
   }
   return fallback;
 }
@@ -100,8 +125,16 @@ const generateSystemPrompt = (category?: string) => {
     ? `用户已指定该素材属于【${category}】类目，请务必基于此行业背景进行分析。`
     : '';
 
-  return `你是一位精通"跑量短视频"拆解的专家。请分析素材并返回纯JSON格式（不要用markdown代码块包裹）：
+  return `你是一位精通"跑量短视频"拆解的专家。请分析素材并返回纯JSON格式。
 
+重要要求：
+1. 直接输出JSON，不要有任何前缀文字（如"以下是分析结果"、"Thinking Process"等）
+2. 不要输出任何推理过程、思考步骤或分析说明
+3. 不要使用markdown代码块（如```json ```）
+4. JSON必须是最外层为{}的完整对象
+5. 不要有多余的换行或空白字符
+
+JSON结构如下：
 {
   "title": "简洁有力的标题",
   "productCategory": "产品类目",
@@ -118,7 +151,7 @@ const generateSystemPrompt = (category?: string) => {
 
 ${categoryContext}
 
-请确保分析专业、具体，具备可执行性。返回纯JSON格式，不要markdown代码块。`;
+请直接返回纯JSON，不要任何其他内容。`;
 };
 
 const generateTrendSystemPrompt = () => {
