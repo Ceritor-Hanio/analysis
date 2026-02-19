@@ -39,16 +39,43 @@ export async function callAliAPI(
       throw new Error(`API Error (${res.status}): ${errorText}`);
     }
 
-    const blob = await res.blob();
-    const text = await blob.text();
-
-    try {
-      const data = JSON.parse(text);
-      const content = data.choices?.[0]?.message?.content || '';
-      return content;
-    } catch {
-      throw new Error(`Invalid JSON response: ${text.substring(0, 200)}`);
+    const reader = res.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
     }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            return fullContent;
+          }
+
+          try {
+            const json = JSON.parse(data);
+            const chunk = json.choices?.[0]?.delta?.reasoning_content || 
+                          json.choices?.[0]?.delta?.content || '';
+            fullContent += chunk;
+          } catch (e) {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+
+    return fullContent;
 
   } catch (err) {
     clearTimeout(timeoutId);
