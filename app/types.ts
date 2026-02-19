@@ -28,13 +28,6 @@ export interface TrendAnalysis {
 }
 
 export interface AnalysisResult {
-  id: string;
-  timestamp: number;
-  title: string;
-  productCategory: string;
-  hookPrinciple: string;
-  openingCopy?: string;
-  successFactor: string;
-  contentStructure: string;
-  visualReference?: string;
+  scriptCases: ScriptCase[];
+  trendAnalysis: TrendAnalysis;
 }
