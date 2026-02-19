@@ -1,15 +1,5 @@
 const ALI_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
-function streamProxy(res) {
-  return new Response(res.body, {
-    status: res.status,
-    headers: {
-      'Content-Type': res.headers.get('Content-Type') || 'text/event-stream',
-      'Cache-Control': 'no-store',
-    },
-  });
-}
-
 export async function onRequest({ request }) {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -34,11 +24,22 @@ export async function onRequest({ request }) {
       body: JSON.stringify({
         model: modelId || 'qwen3.5-plus',
         messages: messages || [],
-        stream: true,
       }),
     });
 
-    return streamProxy(res);
+    const text = await res.text();
+
+    if (!res.ok) {
+      return new Response(text, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(text, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message || 'Error' }), {
