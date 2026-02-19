@@ -1,127 +1,57 @@
 const ALI_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
-const corsHeaders = {
+const HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
+  'Cache-Control': 'no-store',
 };
 
-export async function onRequest({ request, env }) {
-  const requestId = Math.random().toString(36).substring(2, 15);
-  
+export async function onRequest({ request }) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: HEADERS });
+  }
+
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: HEADERS
+    });
+  }
+
   try {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-      });
-    }
-
-    request.headers.delete('accept-encoding');
-
-    const bodyText = await request.text();
-    console.log(`[${requestId}] Request body length:`, bodyText.length);
-
-    if (!bodyText) {
-      return new Response(JSON.stringify({ error: 'Empty request body', requestId }), {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    let body;
-    try {
-      body = JSON.parse(bodyText);
-    } catch (parseError) {
-      console.log(`[${requestId}] JSON parse error:`, parseError.message);
-      return new Response(JSON.stringify({ error: 'Invalid JSON in request body', requestId }), {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    const { apiKey, modelId, messages } = body;
+    const { apiKey, modelId, messages } = await request.json();
 
     if (!apiKey) {
-      console.log(`[${requestId}] Missing API key`);
-      return new Response(JSON.stringify({ error: 'API Key is required', requestId }), {
+      return new Response(JSON.stringify({ error: 'API Key required' }), {
         status: 401,
-        headers: corsHeaders,
+        headers: HEADERS
       });
     }
 
-    console.log(`[${requestId}] Calling AI API, model:`, modelId || 'qwen3.5-plus');
+    const res = await fetch(ALI_API_BASE + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: modelId || 'qwen3.5-plus',
+        messages: messages || [],
+        stream: true,
+      }),
+    });
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log(`[${requestId}] Request timeout, aborting...`);
-      controller.abort();
-    }, 55000);
+    return new Response(res.body, {
+      status: res.status,
+      headers: HEADERS,
+    });
 
-    try {
-      const response = await fetch(ALI_API_BASE + '/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: modelId || 'qwen3.5-plus',
-          messages: messages || [],
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log(`[${requestId}] API error:`, response.status, errorText);
-        return new Response(JSON.stringify({
-          error: 'API Error',
-          status: response.status,
-          details: errorText.substring(0, 500),
-          requestId
-        }), {
-          status: response.status,
-          headers: corsHeaders,
-        });
-      }
-
-      const responseText = await response.text();
-      console.log(`[${requestId}] Response received, length:`, responseText.length);
-
-      return new Response(responseText, {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      const errorMsg = fetchError.message || String(fetchError);
-
-      if (errorMsg.includes('aborted') || errorMsg.includes('timeout')) {
-        console.log(`[${requestId}] Request timed out`);
-        return new Response(JSON.stringify({ error: 'Request timed out', requestId }), {
-          status: 504,
-          headers: corsHeaders,
-        });
-      }
-
-      console.log(`[${requestId}] Fetch error:`, errorMsg);
-      return new Response(JSON.stringify({ error: 'Fetch error', message: errorMsg, requestId }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.log(`[${requestId}] Unexpected error:`, errorMsg);
-    return new Response(JSON.stringify({ error: 'Internal Error', message: errorMsg, requestId }), {
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message || 'Error' }), {
       status: 500,
-      headers: corsHeaders,
+      headers: HEADERS
     });
   }
 }
