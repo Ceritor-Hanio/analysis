@@ -5,111 +5,40 @@ import { Upload, FileText, Loader2, ArrowRight, CheckCircle, Image as ImageIcon,
 import { fileToBase64, callAliAPI } from '../app/aliApi';
 
 function findLastJsonObject(text: string): string | null {
-  const lastBraceIndex = text.lastIndexOf('}');
+  const lastBraceIndex = text.lastIndexOf('{');
   if (lastBraceIndex === -1) return null;
   
-  for (let i = lastBraceIndex; i >= 0; i--) {
-    if (text[i] === '}') {
-      let braceCount = 0;
-      for (let j = i; j >= 0; j--) {
-        if (text[j] === '}') braceCount++;
-        if (text[j] === '{') {
-          braceCount--;
-          if (braceCount === 0) {
-            const jsonStr = text.substring(j, i + 1);
-            try {
-              JSON.parse(jsonStr);
-              return jsonStr;
-            } catch {
-              continue;
-            }
-          }
-        }
-      }
-    }
+  const jsonStr = text.substring(lastBraceIndex);
+  
+  try {
+    JSON.parse(jsonStr);
+    return jsonStr;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 function findJsonStart(text: string): { jsonStr: string | null; found: boolean } {
-  const trimmed = text.trim();
-  
-  const codeBlockMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/);
-  if (codeBlockMatch) {
-    return { jsonStr: codeBlockMatch[1].trim(), found: true };
+  const lastBraceIndex = text.lastIndexOf('}');
+  if (lastBraceIndex === -1) {
+    return { jsonStr: null, found: false };
   }
   
-  const codeBlockAnyMatch = trimmed.match(/```\s*([\s\S]*?)\s*```/);
-  if (codeBlockAnyMatch) {
-    const content = codeBlockAnyMatch[1].trim();
-    if (content.startsWith('{') || content.startsWith('[')) {
-      return { jsonStr: content, found: true };
-    }
-  }
-  
-  const jsonPatterns: RegExp[] = [
-    /\{"[\s\S]*?"(title|productCategory|hookPrinciple|successFactor|contentStructure|visualElements|speechContent|aiReproduction)/i,
-    /\{"[\s\S]*?"(标题|产品类目|开头策略|成功因素|内容结构|视觉元素|语音内容)/i,
-    /\{[\s\S]*?"/,
-    /\{"title"/i,
-    /\{"productCategory"/i,
-    /\{"hookPrinciple"/i,
-    /\{"successFactor"/i,
-    /\{"contentStructure"/i,
-    /\{"visualElements"/i,
-    /\{"speechContent"/i,
-    /\{"aiReproduction"/i,
-    /\{"标题"/i,
-    /\{"产品类目"/i,
-    /\{"开头策略"/i,
-    /\{"成功因素"/i,
-    /\{"内容结构"/i,
-    /\{"视觉元素"/i,
-    /\{"语音内容"/i,
-    /\{"视觉提示词"/i,
-    /\{"音频提示词"/i
-  ];
-  
-  for (const pattern of jsonPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const startIndex = text.indexOf(match[0]);
-      let braceCount = 0;
-      for (let i = startIndex; i < text.length; i++) {
-        if (text[i] === '{') braceCount++;
-        if (text[i] === '}') {
-          braceCount--;
-          if (braceCount === 0) {
-            return { jsonStr: text.substring(startIndex, i + 1), found: true };
-          }
+  let braceCount = 0;
+  for (let i = lastBraceIndex; i >= 0; i--) {
+    if (text[i] === '}') braceCount++;
+    if (text[i] === '{') {
+      braceCount--;
+      if (braceCount === 0) {
+        const jsonStr = text.substring(i, lastBraceIndex + 1);
+        try {
+          JSON.parse(jsonStr);
+          return { jsonStr, found: true };
+        } catch {
+          return { jsonStr: null, found: false };
         }
       }
     }
-  }
-  
-  const jsonStartMatch = trimmed.match(/\{["']/);
-  if (jsonStartMatch) {
-    const startIndex = text.indexOf(jsonStartMatch[0]);
-    let braceCount = 0;
-    for (let i = startIndex; i < text.length; i++) {
-      if (text[i] === '{') braceCount++;
-      if (text[i] === '}') {
-        braceCount--;
-        if (braceCount === 0) {
-          return { jsonStr: text.substring(startIndex, i + 1), found: true };
-        }
-      }
-    }
-  }
-  
-  const jsonArrayMatch = trimmed.match(/\[[\s\S]*?\]/);
-  if (jsonArrayMatch) {
-    return { jsonStr: jsonArrayMatch[0], found: true };
-  }
-  
-  const lastJson = findLastJsonObject(text);
-  if (lastJson) {
-    return { jsonStr: lastJson, found: true };
   }
   
   return { jsonStr: null, found: false };
